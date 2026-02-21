@@ -4,15 +4,19 @@ import Auth from './components/Auth'
 import ExpenseForm from './components/ExpenseForm'
 import ExpenseList from './components/ExpenseList'
 import SummaryDashboard from './components/SummaryDashboard'
+import BudgetForm from './components/BudgetForm'
+import BudgetProgress from './components/BudgetProgress'
 import type { Session } from '@supabase/supabase-js'
 import type { Expense } from './types/expense'
-import { LogOut, LayoutDashboard, History, PlusSquare, ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react'
+import type { Budget } from './types/budget'
+import { LogOut, LayoutDashboard, History, PlusSquare, ChevronLeft, ChevronRight, CalendarDays, Target } from 'lucide-react'
 
 function App() {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const [expenses, setExpenses] = useState<Expense[]>([])
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'history' | 'add'>('dashboard')
+  const [budgets, setBudgets] = useState<Budget[]>([])
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'history' | 'add' | 'budget'>('dashboard')
   
   // Monthly Filter State
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth())
@@ -37,10 +41,30 @@ function App() {
     }
   }, [currentMonth, currentYear])
 
+  const fetchBudgets = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('budgets')
+        .select('*')
+        .eq('month', currentMonth)
+        .eq('year', currentYear)
+
+      if (error) throw error
+      setBudgets(data || [])
+    } catch (error: any) {
+      console.error('Error fetching budgets:', error.message)
+    }
+  }, [currentMonth, currentYear])
+
+  const refreshData = useCallback(() => {
+    fetchExpenses()
+    fetchBudgets()
+  }, [fetchExpenses, fetchBudgets])
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
-      if (session) fetchExpenses()
+      if (session) refreshData()
       setLoading(false)
     })
 
@@ -48,11 +72,11 @@ function App() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
-      if (session) fetchExpenses()
+      if (session) refreshData()
     })
 
     return () => subscription.unsubscribe()
-  }, [fetchExpenses])
+  }, [refreshData])
 
   const nextMonth = () => {
     if (currentMonth === 11) {
@@ -102,7 +126,7 @@ function App() {
             </div>
             <div>
               <h1 className="text-xl font-black text-charcoal tracking-tight leading-none">PocketTrack</h1>
-              <p className="text-[10px] font-bold text-primary uppercase tracking-widest mt-1">v1.1.0 Alpha</p>
+              <p className="text-[10px] font-bold text-primary uppercase tracking-widest mt-1">v1.1.0 Beta</p>
             </div>
           </div>
           <button 
@@ -131,8 +155,12 @@ function App() {
         </div>
 
         {activeTab === 'dashboard' && (
-          <div className="space-y-6">
+          <div className="space-y-6 animate-in fade-in duration-500">
             <SummaryDashboard expenses={expenses} />
+            
+            {/* Budget Progress Highlights */}
+            <BudgetProgress budgets={budgets} expenses={expenses} />
+
             <div className="space-y-4">
               <div className="flex items-center justify-between px-1">
                 <h3 className="text-lg font-bold text-charcoal">Monthly History</h3>
@@ -143,7 +171,7 @@ function App() {
                   See All
                 </button>
               </div>
-              <ExpenseList expenses={expenses.slice(0, 5)} onDelete={fetchExpenses} />
+              <ExpenseList expenses={expenses.slice(0, 5)} onDelete={refreshData} />
             </div>
           </div>
         )}
@@ -151,26 +179,48 @@ function App() {
         {activeTab === 'add' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
             <h2 className="text-2xl font-black text-charcoal px-1">New Entry</h2>
-            <ExpenseForm onSuccess={() => { fetchExpenses(); setActiveTab('dashboard'); }} />
+            <ExpenseForm onSuccess={() => { refreshData(); setActiveTab('dashboard'); }} />
           </div>
         )}
 
         {activeTab === 'history' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-            <h2 className="text-2xl font-black text-charcoal px-1">All Records</h2>
-            <ExpenseList expenses={expenses} onDelete={fetchExpenses} />
+            <h2 className="text-2xl font-black text-charcoal px-1 text-left">All Records</h2>
+            <ExpenseList expenses={expenses} onDelete={refreshData} />
+          </div>
+        )}
+
+        {activeTab === 'budget' && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <h2 className="text-2xl font-black text-charcoal px-1 text-left">Budgets</h2>
+            <BudgetForm 
+              currentMonth={currentMonth} 
+              currentYear={currentYear} 
+              onSuccess={() => { refreshData(); setActiveTab('dashboard'); }} 
+            />
+            <div className="mt-8">
+              <BudgetProgress budgets={budgets} expenses={expenses} />
+            </div>
           </div>
         )}
       </main>
 
       {/* Navigation - Enhanced with new palette */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-white/20 px-8 py-4 flex justify-around items-center z-30 sm:max-w-md sm:mx-auto sm:mb-6 sm:rounded-3xl sm:shadow-2xl sm:border sm:left-4 sm:right-4">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-white/20 px-4 py-4 flex justify-around items-center z-30 sm:max-w-md sm:mx-auto sm:mb-6 sm:rounded-3xl sm:shadow-2xl sm:border sm:left-4 sm:right-4">
         <button 
           onClick={() => setActiveTab('dashboard')}
           className={`flex flex-col items-center gap-1.5 transition-all duration-300 ${activeTab === 'dashboard' ? 'text-primary scale-110' : 'text-charcoal/30 hover:text-charcoal/50'}`}
         >
           <LayoutDashboard size={24} strokeWidth={activeTab === 'dashboard' ? 3 : 2} />
           <span className="text-[9px] font-black uppercase tracking-widest">Home</span>
+        </button>
+
+        <button 
+          onClick={() => setActiveTab('budget')}
+          className={`flex flex-col items-center gap-1.5 transition-all duration-300 ${activeTab === 'budget' ? 'text-primary scale-110' : 'text-charcoal/30 hover:text-charcoal/50'}`}
+        >
+          <Target size={24} strokeWidth={activeTab === 'budget' ? 3 : 2} />
+          <span className="text-[9px] font-black uppercase tracking-widest">Budget</span>
         </button>
         
         <button 
