@@ -15,9 +15,10 @@
 @variant dark (&:where(.dark, .dark *));
 
 .dark {
-  --color-secondary: #1A1C22; /* Deep Charcoal for background */
-  --color-charcoal: #E5DED1;  /* Light Linen for text */
-  --color-primary: #A68A6B;   /* Lighter Walnut for readability */
+  --color-secondary: #121417; /* Even darker for true dark mode feel */
+  --color-charcoal: #F3F4F6;  /* Bright off-white for main text */
+  --color-primary: #D4C3A3;   /* Much lighter walnut to stand out on dark */
+  --color-accent: #88A68B;    /* Brighter Sage Green for dark mode */
 }
 
 body {
@@ -25,3 +26,11 @@ body {
   color: var(--color-charcoal);
   transition: background-color 0.3s ease, color 0.3s ease;
 }
+
+/* Global utility for text opacity in dark mode */
+.dark .text-charcoal\/30 { color: rgba(243, 244, 246, 0.3); }
+.dark .text-charcoal\/40 { color: rgba(243, 244, 246, 0.4); }
+.dark .text-charcoal\/60 { color: rgba(243, 244, 246, 0.6); }
+.dark .bg-white\/70 { background-color: rgba(255, 255, 255, 0.05); }
+.dark .bg-white\/80 { background-color: rgba(255, 255, 255, 0.08); }
+.dark .bg-white\/50 { background-color: rgba(255, 255, 255, 0.03); }
