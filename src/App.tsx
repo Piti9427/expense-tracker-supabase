@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { supabase } from './lib/supabase'
 import Auth from './components/Auth'
 import ExpenseForm from './components/ExpenseForm'
@@ -9,7 +9,7 @@ import BudgetProgress from './components/BudgetProgress'
 import type { Session } from '@supabase/supabase-js'
 import type { Expense } from './types/expense'
 import type { Budget } from './types/budget'
-import { LogOut, LayoutDashboard, History, PlusSquare, ChevronLeft, ChevronRight, CalendarDays, Target } from 'lucide-react'
+import { LogOut, LayoutDashboard, History, PlusSquare, ChevronLeft, ChevronRight, CalendarDays, Target, Sun, Moon, Search, Download, X } from 'lucide-react'
 
 function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -17,6 +17,69 @@ function App() {
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [budgets, setBudgets] = useState<Budget[]>([])
   const [activeTab, setActiveTab] = useState<'dashboard' | 'history' | 'add' | 'budget'>('dashboard')
+  
+  // Search State
+  const [searchQuery, setSearchQuery] = useState('')
+  const [isSearching, setIsSearching] = useState(false)
+
+  // Filtered Expenses for Search
+  const filteredExpenses = useMemo(() => {
+    if (!searchQuery.trim()) return expenses;
+    const query = searchQuery.toLowerCase();
+    return expenses.filter(exp => 
+      exp.category.toLowerCase().includes(query) || 
+      (exp.description?.toLowerCase().includes(query)) ||
+      exp.tags?.some(tag => tag.toLowerCase().includes(query))
+    );
+  }, [expenses, searchQuery])
+
+  // CSV Export Function
+  const exportToCSV = () => {
+    if (expenses.length === 0) return;
+    
+    const headers = ['Date', 'Type', 'Category', 'Amount', 'Description', 'Tags'];
+    const csvContent = [
+      headers.join(','),
+      ...expenses.map(exp => [
+        exp.date,
+        exp.type,
+        `"${exp.category}"`,
+        exp.amount,
+        `"${exp.description || ''}"`,
+        `"${exp.tags?.join('; ') || ''}"`
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `PocketTrack_Export_${monthNames[currentMonth]}_${currentYear}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Theme State
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('theme') === 'dark' || 
+        (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)
+    }
+    return false
+  })
+
+  // Apply theme class to root
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add('dark')
+      localStorage.setItem('theme', 'dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+      localStorage.setItem('theme', 'light')
+    }
+  }, [isDark])
   
   // Monthly Filter State
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth())
@@ -110,15 +173,15 @@ function App() {
 
   if (!session) {
     return (
-      <div className="min-h-screen bg-secondary p-4">
+      <div className="min-h-screen bg-secondary p-4 flex items-center justify-center">
         <Auth />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-secondary pb-24 sm:pb-8 text-charcoal font-sans">
-      <header className="bg-white/80 backdrop-blur-md sticky top-0 z-20 border-b border-white/20">
+    <div className="min-h-screen bg-secondary pb-24 sm:pb-8 text-charcoal font-sans transition-colors duration-500">
+      <header className="bg-white/80 dark:bg-white/5 backdrop-blur-md sticky top-0 z-20 border-b border-white/20">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-4">
           <div className="flex items-center gap-2">
             <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-secondary shadow-lg shadow-primary/20">
@@ -129,64 +192,118 @@ function App() {
               <p className="text-[10px] font-bold text-primary uppercase tracking-widest mt-1">v1.1.0 Beta</p>
             </div>
           </div>
-          <button 
-            className="p-2.5 text-charcoal/40 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all" 
-            onClick={() => supabase.auth.signOut()}
-          >
-            <LogOut size={20} />
-          </button>
+          <div className="flex items-center gap-1 sm:gap-2">
+            <button 
+              className="p-2.5 text-charcoal/40 hover:text-primary transition-all rounded-xl"
+              onClick={() => setIsSearching(!isSearching)}
+              title="Search Transactions"
+            >
+              <Search size={20} />
+            </button>
+            <button 
+              className="p-2.5 text-charcoal/40 hover:text-accent transition-all rounded-xl"
+              onClick={exportToCSV}
+              title="Export to CSV"
+            >
+              <Download size={20} />
+            </button>
+            <button 
+              className="p-2.5 text-charcoal/40 hover:text-primary transition-all rounded-xl"
+              onClick={() => setIsDark(!isDark)}
+            >
+              {isDark ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+            <button 
+              className="p-2.5 text-charcoal/40 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all" 
+              onClick={() => supabase.auth.signOut()}
+            >
+              <LogOut size={20} />
+            </button>
+          </div>
         </div>
+        
+        {/* Search Bar Animation */}
+        {isSearching && (
+          <div className="mx-auto max-w-2xl px-4 py-3 bg-white/50 dark:bg-black/20 border-t border-white/20 animate-in slide-in-from-top-2 duration-300">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search by category, tags or notes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                autoFocus
+                className="w-full bg-white dark:bg-white/5 border-none rounded-2xl py-3 pl-10 pr-10 text-sm font-bold text-charcoal focus:ring-2 focus:ring-primary/20 transition-all shadow-inner"
+              />
+              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-charcoal/30" />
+              {searchQuery && (
+                <button 
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-charcoal/30 hover:text-charcoal transition-all"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </header>
 
       <main className="mx-auto max-w-2xl px-4 py-6 space-y-6">
         {/* Month Selector */}
-        <div className="flex items-center justify-between bg-white/50 p-2 rounded-2xl border border-white/50 shadow-sm">
-          <button onClick={prevMonth} className="p-2 hover:bg-white rounded-xl transition shadow-sm border border-transparent hover:border-white/50">
-            <ChevronLeft size={20} className="text-primary" />
-          </button>
-          <div className="text-center">
-            <span className="text-sm font-black text-charcoal uppercase tracking-tighter">
-              {monthNames[currentMonth]} {currentYear}
-            </span>
+        {!searchQuery && (
+          <div className="flex items-center justify-between bg-white/50 dark:bg-white/5 p-2 rounded-2xl border border-white/50 dark:border-white/10 shadow-sm">
+            <button onClick={prevMonth} className="p-2 hover:bg-white dark:hover:bg-white/10 rounded-xl transition shadow-sm border border-transparent hover:border-white/50">
+              <ChevronLeft size={20} className="text-primary" />
+            </button>
+            <div className="text-center">
+              <span className="text-sm font-black text-charcoal uppercase tracking-tighter">
+                {monthNames[currentMonth]} {currentYear}
+              </span>
+            </div>
+            <button onClick={nextMonth} className="p-2 hover:bg-white dark:hover:bg-white/10 rounded-xl transition shadow-sm border border-transparent hover:border-white/50">
+              <ChevronRight size={20} className="text-primary" />
+            </button>
           </div>
-          <button onClick={nextMonth} className="p-2 hover:bg-white rounded-xl transition shadow-sm border border-transparent hover:border-white/50">
-            <ChevronRight size={20} className="text-primary" />
-          </button>
-        </div>
+        )}
 
         {activeTab === 'dashboard' && (
           <div className="space-y-6 animate-in fade-in duration-500">
-            <SummaryDashboard expenses={expenses} />
+            <SummaryDashboard expenses={filteredExpenses} />
             
-            {/* Budget Progress Highlights */}
             <BudgetProgress budgets={budgets} expenses={expenses} />
 
             <div className="space-y-4">
               <div className="flex items-center justify-between px-1">
-                <h3 className="text-lg font-bold text-charcoal">Monthly History</h3>
-                <button 
-                  onClick={() => setActiveTab('history')}
-                  className="text-xs font-bold text-primary hover:opacity-80 transition"
-                >
-                  See All
-                </button>
+                <h3 className="text-lg font-bold text-charcoal">
+                  {searchQuery ? 'Search Results' : 'Monthly History'}
+                </h3>
+                {!searchQuery && (
+                  <button 
+                    onClick={() => setActiveTab('history')}
+                    className="text-xs font-bold text-primary hover:opacity-80 transition"
+                  >
+                    See All
+                  </button>
+                )}
               </div>
-              <ExpenseList expenses={expenses.slice(0, 5)} onDelete={refreshData} />
+              <ExpenseList expenses={searchQuery ? filteredExpenses : expenses.slice(0, 5)} onDelete={refreshData} />
             </div>
           </div>
         )}
 
         {activeTab === 'add' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-            <h2 className="text-2xl font-black text-charcoal px-1">New Entry</h2>
+            <h2 className="text-2xl font-black text-charcoal px-1 text-left">New Entry</h2>
             <ExpenseForm onSuccess={() => { refreshData(); setActiveTab('dashboard'); }} />
           </div>
         )}
 
         {activeTab === 'history' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-            <h2 className="text-2xl font-black text-charcoal px-1 text-left">All Records</h2>
-            <ExpenseList expenses={expenses} onDelete={refreshData} />
+            <h2 className="text-2xl font-black text-charcoal px-1 text-left">
+              {searchQuery ? `Searching: "${searchQuery}"` : 'All Records'}
+            </h2>
+            <ExpenseList expenses={filteredExpenses} onDelete={refreshData} />
           </div>
         )}
 
@@ -205,8 +322,8 @@ function App() {
         )}
       </main>
 
-      {/* Navigation - Enhanced with new palette */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-white/20 px-4 py-4 flex justify-around items-center z-30 sm:max-w-md sm:mx-auto sm:mb-6 sm:rounded-3xl sm:shadow-2xl sm:border sm:left-4 sm:right-4">
+      {/* Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-white/5 backdrop-blur-lg border-t border-white/20 px-4 py-4 flex justify-around items-center z-30 sm:max-w-md sm:mx-auto sm:mb-6 sm:rounded-3xl sm:shadow-2xl sm:border sm:left-4 sm:right-4">
         <button 
           onClick={() => setActiveTab('dashboard')}
           className={`flex flex-col items-center gap-1.5 transition-all duration-300 ${activeTab === 'dashboard' ? 'text-primary scale-110' : 'text-charcoal/30 hover:text-charcoal/50'}`}
