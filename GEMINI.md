@@ -2,42 +2,37 @@
 
 This project is a React 19 application built with TypeScript, Vite 8, and Tailwind CSS v4, integrated with Supabase for authentication and data storage.
 
-## Project Status: v1.0.0 (Released)
+## Project Status: v1.2.0 (Development)
 
-*   **Current Version:** v1.0.0 (Tagged in Git)
-*   **Deployment:** Successfully deployed on Vercel.
-*   **Database Schema:** Updated to support `income`, `expense`, and `tags`.
-*   **Authentication:** Fully functional with Supabase Auth (Email/Password).
+*   **Current Version:** v1.2.0 (Feature complete for Dynamic Filtering)
+*   **Deployment:** v1.1.0 is stable on Vercel. v1.2.0 is in `feature/dynamic-date-filter`.
+*   **Database Schema:** Supports `income`, `expense`, `tags`, and `budgets`.
 
 ## Features Implemented
 
-*   **Authentication:** Login and Sign Up (Email confirmation can be toggled in Supabase).
-*   **Transactions:** Create and delete income/expense records with categories and descriptions.
-*   **Dashboard:** Real-time summary of Balance, Total Income, and Total Expense.
-*   **Visualization:** Daily activity bar chart for the last 7 days using Recharts.
-*   **Categorization:** Built-in categories with lovely icons (Lucide-React).
-*   **Tagging System:** Support for multiple tags per transaction.
-*   **Mobile-First UI:** Responsive design with Bottom Navigation and Floating Action Button.
+*   **Dynamic Date Filtering (v1.2.0):** Filter data by Day, Week, Month, and Year with adaptive navigation.
+*   **Adaptive Charts:** Visualization automatically groups data by day, weekday, or month based on the selected range.
+*   **Budgeting System:** Monthly limits per category with real-time progress bars and visual alerts.
+*   **Search & Utilities:** Real-time search by category/tags/notes and CSV data export.
+*   **PWA & Experience:** Installable app support and manual/auto Dark Mode with high-contrast earthy tones.
+*   **Core Logic:** Full Income/Expense tracking with multi-tagging and Supabase integration.
 
 ## Tech Stack
 
-*   **Frontend:** React 19, TypeScript, Vite 8 (Beta).
-*   **Styling:** Tailwind CSS v4.
+*   **Frontend:** React 19, TypeScript, Vite 8.
+*   **Styling:** Tailwind CSS v4 (Custom Earthy Palette: Soft Walnut, Natural Linen, Sage Green).
 *   **Backend:** Supabase (Auth & PostgreSQL).
 *   **Charts:** Recharts.
 *   **Icons:** Lucide-React.
 
 ## Development Workflow
 
-*   **Main Branch:** Production-ready code (Synced with Vercel).
-*   **Develop Branch:** Base for new features.
-*   **Branching Strategy:** Use `feature/name` or `bugfix/name` branched from `develop`.
-*   **Tagging:** Use semantic versioning (e.g., `v1.0.0`).
+*   **Branching:** Using `feature/name` branched from `develop`.
+*   **Tagging:** v1.0.0 (Core), v1.1.0 (Budgeting). Next: v1.2.0.
 
-## Next Steps / TODOs (v1.1.0)
+## Next Steps / TODOs
 
-*   [ ] **Monthly Summary:** Filter transactions and charts by month.
-*   [ ] **Budgeting:** Set monthly spending limits per category.
-*   [ ] **PWA Support:** Make the app installable on iPhone/Android.
-*   [ ] **Dark Mode:** Add support for dark theme.
-*   [ ] **Data Export:** Export transactions to CSV/Excel.
+*   [ ] **Custom Date Range:** Allow users to pick specific start and end dates.
+*   [ ] **PWA Refinement:** Enhance offline capabilities and splash screens.
+*   [ ] **Advanced Analytics:** Pie charts for category distribution.
+*   [ ] **Recurring Transactions:** Support for automated monthly records.
