@@ -17,9 +17,9 @@ const CATEGORY_ICONS: Record<string, any> = {
   'Entertainment': <Tv className="text-purple-500" />,
   'Bills': <Receipt className="text-yellow-600" />,
   'Health': <HeartPulse className="text-red-500" />,
-  'Salary': <Wallet className="text-green-600" />,
-  'Freelance': <Briefcase className="text-indigo-600" />,
-  'Investment': <TrendingUp className="text-emerald-600" />,
+  'Salary': <Wallet className="text-accent" />,
+  'Freelance': <Briefcase className="text-primary" />,
+  'Investment': <TrendingUp className="text-accent" />,
   'Gift': <Gift className="text-purple-600" />,
   'Other': <MoreHorizontal className="text-gray-500" />
 };
@@ -47,23 +47,23 @@ export default function ExpenseList({ expenses, onDelete }: ExpenseListProps) {
 
   if (expenses.length === 0) {
     return (
-      <div className="text-center py-12 bg-white rounded-2xl shadow-sm border border-gray-100">
-        <div className="bg-gray-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Calendar className="text-gray-300" size={32} />
+      <div className="text-center py-12 bg-white/50 rounded-3xl border border-white/50 backdrop-blur-sm">
+        <div className="bg-secondary w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-4">
+          <Calendar className="text-primary/20" size={32} />
         </div>
-        <p className="text-gray-500 font-medium">No transactions recorded yet.</p>
+        <p className="text-charcoal/40 font-black text-xs uppercase tracking-widest">No Records This Month</p>
       </div>
     )
   }
 
   return (
-    <div className="bg-white shadow-md border border-gray-100 rounded-2xl overflow-hidden">
-      <ul className="divide-y divide-gray-100">
+    <div className="bg-white/70 backdrop-blur-md shadow-xl border border-white/50 rounded-3xl overflow-hidden">
+      <ul className="divide-y divide-gray-100/50">
         {expenses.map((expense) => (
-          <li key={expense.id} className="p-4 hover:bg-gray-50 transition duration-150">
+          <li key={expense.id} className="p-4 hover:bg-white/50 transition duration-300">
             <div className="flex items-center gap-4">
               <div className={`p-3 rounded-2xl ${
-                expense.type === 'income' ? 'bg-green-50' : 'bg-gray-50'
+                expense.type === 'income' ? 'bg-accent/10' : 'bg-secondary'
               }`}>
                 {CATEGORY_ICONS[expense.category] || <MoreHorizontal className="text-gray-500" />}
               </div>
@@ -71,30 +71,30 @@ export default function ExpenseList({ expenses, onDelete }: ExpenseListProps) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-bold text-gray-900 truncate">
+                    <p className="text-sm font-black text-charcoal truncate tracking-tight">
                       {expense.category}
                     </p>
-                    <p className="text-xs text-gray-500 flex items-center gap-1">
-                      <Calendar size={12} /> {expense.date}
+                    <p className="text-[10px] text-charcoal/40 font-bold flex items-center gap-1 uppercase tracking-tighter">
+                      <Calendar size={10} /> {expense.date}
                     </p>
                   </div>
-                  <p className={`text-base font-bold ${
-                    expense.type === 'income' ? 'text-green-600' : 'text-gray-900'
+                  <p className={`text-base font-black ${
+                    expense.type === 'income' ? 'text-accent' : 'text-charcoal'
                   }`}>
                     {formatCurrency(expense.amount, expense.type)}
                   </p>
                 </div>
                 
                 <div className="mt-2 flex items-center justify-between">
-                  <div className="flex flex-col gap-1">
+                  <div className="flex flex-col gap-1.5">
                     {expense.description && (
-                      <p className="text-sm text-gray-600 truncate max-w-[200px]">
+                      <p className="text-xs text-charcoal/60 font-medium truncate max-w-[200px]">
                         {expense.description}
                       </p>
                     )}
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-wrap gap-1.5">
                       {expense.tags?.map(tag => (
-                        <span key={tag} className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-md">
+                        <span key={tag} className="text-[9px] font-black bg-white/50 text-primary border border-primary/10 px-2 py-0.5 rounded-lg uppercase">
                           #{tag}
                         </span>
                       ))}
@@ -103,7 +103,7 @@ export default function ExpenseList({ expenses, onDelete }: ExpenseListProps) {
                   
                   <button
                     onClick={() => handleDelete(expense.id)}
-                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
+                    className="p-2 text-charcoal/20 hover:text-expense hover:bg-expense/5 rounded-xl transition-all"
                   >
                     <Trash2 size={16} />
                   </button>
