@@ -7,12 +7,21 @@
   --color-charcoal: #3C4048;
   
   --color-income: #5F7161;
-  --color-expense: #A64444; /* Slightly adjusted red to match the earthy tone */
+  --color-expense: #A64444;
   
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+@variant dark (&:where(.dark, .dark *));
+
+.dark {
+  --color-secondary: #1A1C22; /* Deep Charcoal for background */
+  --color-charcoal: #E5DED1;  /* Light Linen for text */
+  --color-primary: #A68A6B;   /* Lighter Walnut for readability */
 }
 
 body {
   background-color: var(--color-secondary);
   color: var(--color-charcoal);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
