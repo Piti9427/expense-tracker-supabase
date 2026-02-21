@@ -62,8 +62,8 @@ export default function ExpenseForm({ onSuccess }: ExpenseFormProps) {
       setDescription('')
       setTags([])
       onSuccess()
-    } catch (error: any) {
-      alert(error.message)
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'An unexpected error occurred')
     } finally {
       setLoading(false)
     }
