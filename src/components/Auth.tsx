@@ -40,10 +40,11 @@ export default function Auth() {
         }
         console.log('Sign in success data:', data)
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Full Auth Error:', error)
-      const errorMsg = error.error_description || error.message || 'Unknown error occurred'
-      alert(`Auth Error (${error.status || 'No Status'}): ${errorMsg}`)
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred'
+      const status = (error instanceof Error && 'status' in error) ? (error as Error & { status: number }).status : 'No Status'
+      alert(`Auth Error (${status}): ${errorMsg}`)
     } finally {
       setLoading(false)
     }
