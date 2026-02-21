@@ -10,6 +10,7 @@ import type { Session } from '@supabase/supabase-js'
 import type { Expense } from './types/expense'
 import type { Budget } from './types/budget'
 import { LogOut, LayoutDashboard, History, PlusSquare, ChevronLeft, ChevronRight, CalendarDays, Target, Sun, Moon, Search, Download, X } from 'lucide-react'
+import { getDateRange, type DateRangeType } from './lib/dateHelpers'
 
 function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -18,6 +19,12 @@ function App() {
   const [budgets, setBudgets] = useState<Budget[]>([])
   const [activeTab, setActiveTab] = useState<'dashboard' | 'history' | 'add' | 'budget'>('dashboard')
   
+  // Date Range State
+  const [rangeType, setRangeType] = useState<DateRangeType>('month')
+  const [rangeOffset, setRangeOffset] = useState(0)
+  
+  const currentRange = useMemo(() => getDateRange(rangeType, rangeOffset), [rangeType, rangeOffset])
+
   // Search State
   const [searchQuery, setSearchQuery] = useState('')
   const [isSearching, setIsSearching] = useState(false)
@@ -54,7 +61,7 @@ function App() {
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `PocketTrack_Export_${monthNames[currentMonth]}_${currentYear}.csv`);
+    link.setAttribute('download', `PocketTrack_Export_${currentRange.label.replace(/ /g, '_')}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -80,21 +87,14 @@ function App() {
       localStorage.setItem('theme', 'light')
     }
   }, [isDark])
-  
-  // Monthly Filter State
-  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth())
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear())
 
   const fetchExpenses = useCallback(async () => {
     try {
-      const firstDay = new Date(currentYear, currentMonth, 1).toISOString()
-      const lastDay = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59).toISOString()
-
       const { data, error } = await supabase
         .from('expenses')
         .select('*')
-        .gte('date', firstDay.split('T')[0])
-        .lte('date', lastDay.split('T')[0])
+        .gte('date', currentRange.startDate)
+        .lte('date', currentRange.endDate)
         .order('date', { ascending: false })
 
       if (error) throw error
@@ -102,22 +102,23 @@ function App() {
     } catch (error: any) {
       console.error('Error fetching expenses:', error.message)
     }
-  }, [currentMonth, currentYear])
+  }, [currentRange])
 
   const fetchBudgets = useCallback(async () => {
     try {
+      const d = new Date(currentRange.startDate)
       const { data, error } = await supabase
         .from('budgets')
         .select('*')
-        .eq('month', currentMonth)
-        .eq('year', currentYear)
+        .eq('month', d.getMonth())
+        .eq('year', d.getFullYear())
 
       if (error) throw error
       setBudgets(data || [])
     } catch (error: any) {
       console.error('Error fetching budgets:', error.message)
     }
-  }, [currentMonth, currentYear])
+  }, [currentRange])
 
   const refreshData = useCallback(() => {
     fetchExpenses()
@@ -140,28 +141,6 @@ function App() {
 
     return () => subscription.unsubscribe()
   }, [refreshData])
-
-  const nextMonth = () => {
-    if (currentMonth === 11) {
-      setCurrentMonth(0)
-      setCurrentYear(currentYear + 1)
-    } else {
-      setCurrentMonth(currentMonth + 1)
-    }
-  }
-
-  const prevMonth = () => {
-    if (currentMonth === 0) {
-      setCurrentMonth(11)
-      setCurrentYear(currentYear - 1)
-    } else {
-      setCurrentMonth(currentMonth - 1)
-    }
-  }
-
-  const monthNames = ["January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
-  ];
 
   if (loading) {
     return (
@@ -189,7 +168,7 @@ function App() {
             </div>
             <div>
               <h1 className="text-xl font-black text-charcoal tracking-tight leading-none">PocketTrack</h1>
-              <p className="text-[10px] font-bold text-primary uppercase tracking-widest mt-1">v1.1.0 Beta</p>
+              <p className="text-[10px] font-bold text-primary uppercase tracking-widest mt-1">v1.2.0 Dev</p>
             </div>
           </div>
           <div className="flex items-center gap-1 sm:gap-2">
@@ -222,7 +201,6 @@ function App() {
           </div>
         </div>
         
-        {/* Search Bar Animation */}
         {isSearching && (
           <div className="mx-auto max-w-2xl px-4 py-3 bg-white/50 dark:bg-black/20 border-t border-white/20 animate-in slide-in-from-top-2 duration-300">
             <div className="relative">
@@ -249,33 +227,54 @@ function App() {
       </header>
 
       <main className="mx-auto max-w-2xl px-4 py-6 space-y-6">
-        {/* Month Selector */}
         {!searchQuery && (
-          <div className="flex items-center justify-between bg-white/50 dark:bg-white/5 p-2 rounded-2xl border border-white/50 dark:border-white/10 shadow-sm">
-            <button onClick={prevMonth} className="p-2 hover:bg-white dark:hover:bg-white/10 rounded-xl transition shadow-sm border border-transparent hover:border-white/50">
-              <ChevronLeft size={20} className="text-primary" />
-            </button>
-            <div className="text-center">
-              <span className="text-sm font-black text-charcoal uppercase tracking-tighter">
-                {monthNames[currentMonth]} {currentYear}
-              </span>
+          <div className="space-y-4">
+            <div className="flex bg-white/40 dark:bg-white/5 p-1 rounded-2xl gap-1 overflow-x-auto no-scrollbar">
+              {(['day', 'week', 'month', 'year'] as const).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => { setRangeType(type); setRangeOffset(0); }}
+                  className={`flex-1 py-2 px-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${
+                    rangeType === type ? 'bg-white dark:bg-white/10 text-primary shadow-sm' : 'text-charcoal/30 hover:text-charcoal/50'
+                  }`}
+                >
+                  {type}
+                </button>
+              ))}
             </div>
-            <button onClick={nextMonth} className="p-2 hover:bg-white dark:hover:bg-white/10 rounded-xl transition shadow-sm border border-transparent hover:border-white/50">
-              <ChevronRight size={20} className="text-primary" />
-            </button>
+
+            <div className="flex items-center justify-between bg-white/50 dark:bg-white/5 p-2 rounded-2xl border border-white/50 dark:border-white/10 shadow-sm">
+              <button 
+                onClick={() => setRangeOffset(rangeOffset - 1)} 
+                className="p-2 hover:bg-white dark:hover:bg-white/10 rounded-xl transition shadow-sm border border-transparent hover:border-white/50"
+              >
+                <ChevronLeft size={20} className="text-primary" />
+              </button>
+              <div className="text-center">
+                <span className="text-sm font-black text-charcoal uppercase tracking-tighter">
+                  {currentRange.label}
+                </span>
+              </div>
+              <button 
+                onClick={() => setRangeOffset(rangeOffset + 1)} 
+                className="p-2 hover:bg-white dark:hover:bg-white/10 rounded-xl transition shadow-sm border border-transparent hover:border-white/50"
+              >
+                <ChevronRight size={20} className="text-primary" />
+              </button>
+            </div>
           </div>
         )}
 
         {activeTab === 'dashboard' && (
           <div className="space-y-6 animate-in fade-in duration-500">
-            <SummaryDashboard expenses={filteredExpenses} />
+            <SummaryDashboard expenses={filteredExpenses} rangeType={rangeType} />
             
             <BudgetProgress budgets={budgets} expenses={expenses} />
 
             <div className="space-y-4">
               <div className="flex items-center justify-between px-1">
                 <h3 className="text-lg font-bold text-charcoal">
-                  {searchQuery ? 'Search Results' : 'Monthly History'}
+                  {searchQuery ? 'Search Results' : 'Records'}
                 </h3>
                 {!searchQuery && (
                   <button 
@@ -311,8 +310,8 @@ function App() {
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
             <h2 className="text-2xl font-black text-charcoal px-1 text-left">Budgets</h2>
             <BudgetForm 
-              currentMonth={currentMonth} 
-              currentYear={currentYear} 
+              currentMonth={new Date(currentRange.startDate).getMonth()} 
+              currentYear={new Date(currentRange.startDate).getFullYear()} 
               onSuccess={() => { refreshData(); setActiveTab('dashboard'); }} 
             />
             <div className="mt-8">

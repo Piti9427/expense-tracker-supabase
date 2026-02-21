@@ -1,26 +1,42 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import type { Expense } from '../types/expense';
+import type { DateRangeType } from '../lib/dateHelpers';
 
 interface SummaryDashboardProps {
   expenses: Expense[];
+  rangeType: DateRangeType;
 }
 
 interface ChartData {
+  label: string;
   date: string;
   income: number;
   expense: number;
 }
 
-export default function SummaryDashboard({ expenses }: SummaryDashboardProps) {
+export default function SummaryDashboard({ expenses, rangeType }: SummaryDashboardProps) {
+  // จัดกลุ่มข้อมูลตามความเหมาะสมของ rangeType
   const groupedData = expenses.reduce<Record<string, ChartData>>((acc, curr) => {
-    const date = curr.date;
-    if (!acc[date]) {
-      acc[date] = { date, income: 0, expense: 0 };
+    let key = curr.date;
+    let label = '';
+    const d = new Date(curr.date);
+
+    if (rangeType === 'year') {
+      key = `${d.getFullYear()}-${d.getMonth() + 1}`;
+      label = d.toLocaleDateString('en-US', { month: 'short' });
+    } else if (rangeType === 'week') {
+      label = d.toLocaleDateString('en-US', { weekday: 'short' });
+    } else {
+      label = d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+    }
+
+    if (!acc[key]) {
+      acc[key] = { label, date: curr.date, income: 0, expense: 0 };
     }
     if (curr.type === 'income') {
-      acc[date].income += Number(curr.amount);
+      acc[key].income += Number(curr.amount);
     } else {
-      acc[date].expense += Number(curr.amount);
+      acc[key].expense += Number(curr.amount);
     }
     return acc;
   }, {});
@@ -63,7 +79,7 @@ export default function SummaryDashboard({ expenses }: SummaryDashboardProps) {
 
       <div className="bg-white/70 dark:bg-white/5 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-white/50 dark:border-white/10 h-72 transition-colors">
         <h4 className="text-sm font-black text-charcoal dark:text-charcoal uppercase tracking-tighter mb-6 flex items-center justify-between">
-          Monthly Activity
+          Activity Overview
           <div className="flex gap-2">
             <span className="flex items-center gap-1 text-[9px] font-bold text-accent">
               <span className="w-2 h-2 rounded-full bg-accent"></span> Income
@@ -78,17 +94,10 @@ export default function SummaryDashboard({ expenses }: SummaryDashboardProps) {
             <BarChart data={data}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#8C735510" />
               <XAxis 
-                dataKey="date" 
+                dataKey="label" 
                 axisLine={false} 
                 tickLine={false} 
                 tick={{ fontSize: 9, fill: 'currentColor', opacity: 0.4, fontWeight: 'bold' }}
-                tickFormatter={(str: string) => {
-                  try {
-                    return new Date(str).toLocaleDateString('en-US', { day: 'numeric' });
-                  } catch {
-                    return str;
-                  }
-                }}
               />
               <YAxis hide />
               <Tooltip 
