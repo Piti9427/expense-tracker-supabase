@@ -9,7 +9,7 @@ import BudgetProgress from './components/BudgetProgress'
 import type { Session } from '@supabase/supabase-js'
 import type { Expense } from './types/expense'
 import type { Budget } from './types/budget'
-import { LogOut, LayoutDashboard, History, PlusSquare, ChevronLeft, ChevronRight, CalendarDays, Target } from 'lucide-react'
+import { LogOut, LayoutDashboard, History, PlusSquare, ChevronLeft, ChevronRight, CalendarDays, Target, Sun, Moon } from 'lucide-react'
 
 function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -17,6 +17,26 @@ function App() {
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [budgets, setBudgets] = useState<Budget[]>([])
   const [activeTab, setActiveTab] = useState<'dashboard' | 'history' | 'add' | 'budget'>('dashboard')
+  
+  // Theme State
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('theme') === 'dark' || 
+        (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)
+    }
+    return false
+  })
+
+  // Apply theme class to root
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add('dark')
+      localStorage.setItem('theme', 'dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+      localStorage.setItem('theme', 'light')
+    }
+  }, [isDark])
   
   // Monthly Filter State
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth())
@@ -110,15 +130,15 @@ function App() {
 
   if (!session) {
     return (
-      <div className="min-h-screen bg-secondary p-4">
+      <div className="min-h-screen bg-secondary p-4 flex items-center justify-center">
         <Auth />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-secondary pb-24 sm:pb-8 text-charcoal font-sans">
-      <header className="bg-white/80 backdrop-blur-md sticky top-0 z-20 border-b border-white/20">
+    <div className="min-h-screen bg-secondary pb-24 sm:pb-8 text-charcoal font-sans transition-colors duration-500">
+      <header className="bg-white/80 dark:bg-white/5 backdrop-blur-md sticky top-0 z-20 border-b border-white/20">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-4">
           <div className="flex items-center gap-2">
             <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-secondary shadow-lg shadow-primary/20">
@@ -129,19 +149,27 @@ function App() {
               <p className="text-[10px] font-bold text-primary uppercase tracking-widest mt-1">v1.1.0 Beta</p>
             </div>
           </div>
-          <button 
-            className="p-2.5 text-charcoal/40 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all" 
-            onClick={() => supabase.auth.signOut()}
-          >
-            <LogOut size={20} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button 
+              className="p-2.5 text-charcoal/40 hover:text-primary transition-all rounded-xl"
+              onClick={() => setIsDark(!isDark)}
+            >
+              {isDark ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+            <button 
+              className="p-2.5 text-charcoal/40 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all" 
+              onClick={() => supabase.auth.signOut()}
+            >
+              <LogOut size={20} />
+            </button>
+          </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-2xl px-4 py-6 space-y-6">
         {/* Month Selector */}
-        <div className="flex items-center justify-between bg-white/50 p-2 rounded-2xl border border-white/50 shadow-sm">
-          <button onClick={prevMonth} className="p-2 hover:bg-white rounded-xl transition shadow-sm border border-transparent hover:border-white/50">
+        <div className="flex items-center justify-between bg-white/50 dark:bg-white/5 p-2 rounded-2xl border border-white/50 dark:border-white/10 shadow-sm">
+          <button onClick={prevMonth} className="p-2 hover:bg-white dark:hover:bg-white/10 rounded-xl transition shadow-sm border border-transparent hover:border-white/50">
             <ChevronLeft size={20} className="text-primary" />
           </button>
           <div className="text-center">
@@ -149,7 +177,7 @@ function App() {
               {monthNames[currentMonth]} {currentYear}
             </span>
           </div>
-          <button onClick={nextMonth} className="p-2 hover:bg-white rounded-xl transition shadow-sm border border-transparent hover:border-white/50">
+          <button onClick={nextMonth} className="p-2 hover:bg-white dark:hover:bg-white/10 rounded-xl transition shadow-sm border border-transparent hover:border-white/50">
             <ChevronRight size={20} className="text-primary" />
           </button>
         </div>
@@ -158,7 +186,6 @@ function App() {
           <div className="space-y-6 animate-in fade-in duration-500">
             <SummaryDashboard expenses={expenses} />
             
-            {/* Budget Progress Highlights */}
             <BudgetProgress budgets={budgets} expenses={expenses} />
 
             <div className="space-y-4">
@@ -205,8 +232,8 @@ function App() {
         )}
       </main>
 
-      {/* Navigation - Enhanced with new palette */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-white/20 px-4 py-4 flex justify-around items-center z-30 sm:max-w-md sm:mx-auto sm:mb-6 sm:rounded-3xl sm:shadow-2xl sm:border sm:left-4 sm:right-4">
+      {/* Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-white/5 backdrop-blur-lg border-t border-white/20 px-4 py-4 flex justify-around items-center z-30 sm:max-w-md sm:mx-auto sm:mb-6 sm:rounded-3xl sm:shadow-2xl sm:border sm:left-4 sm:right-4">
         <button 
           onClick={() => setActiveTab('dashboard')}
           className={`flex flex-col items-center gap-1.5 transition-all duration-300 ${activeTab === 'dashboard' ? 'text-primary scale-110' : 'text-charcoal/30 hover:text-charcoal/50'}`}
