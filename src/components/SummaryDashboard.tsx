@@ -1,13 +1,19 @@
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import type { Expense } from '../types/expense';
 
 interface SummaryDashboardProps {
   expenses: Expense[];
 }
 
+interface ChartData {
+  date: string;
+  income: number;
+  expense: number;
+}
+
 export default function SummaryDashboard({ expenses }: SummaryDashboardProps) {
-  // จัดกลุ่มข้อมูลตามวันที่
-  const groupedData = expenses.reduce((acc: any, curr) => {
+  // จัดกลุ่มข้อมูลตามวันที่ พร้อมระบุ Type ให้ชัดเจน
+  const groupedData = expenses.reduce<Record<string, ChartData>>((acc, curr) => {
     const date = curr.date;
     if (!acc[date]) {
       acc[date] = { date, income: 0, expense: 0 };
@@ -22,7 +28,7 @@ export default function SummaryDashboard({ expenses }: SummaryDashboardProps) {
 
   // แปลงเป็น Array และเรียงลำดับวันที่ (ย้อนหลัง 7 วันล่าสุด)
   const data = Object.values(groupedData)
-    .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .slice(-7);
 
   const totalIncome = expenses
@@ -63,26 +69,35 @@ export default function SummaryDashboard({ expenses }: SummaryDashboardProps) {
           Daily Activity
           <span className="text-[10px] text-gray-400 font-normal">Last 7 days</span>
         </h4>
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-            <XAxis 
-              dataKey="date" 
-              axisLine={false} 
-              tickLine={false} 
-              tick={{ fontSize: 10, fill: '#9ca3af' }}
-              tickFormatter={(str) => new Date(str).toLocaleDateString('en-US', { weekday: 'short' })}
-            />
-            <YAxis hide />
-            <Tooltip 
-              cursor={{ fill: '#f9fafb' }}
-              contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-            />
-            <Bar dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="expense" fill="#ef4444" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
+        <div className="h-48">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+              <XAxis 
+                dataKey="date" 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fontSize: 10, fill: '#9ca3af' }}
+                tickFormatter={(str: string) => {
+                  try {
+                    return new Date(str).toLocaleDateString('en-US', { weekday: 'short' });
+                  } catch {
+                    return str;
+                  }
+                }}
+              />
+              <YAxis hide />
+              <Tooltip 
+                cursor={{ fill: '#f9fafb' }}
+                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+              />
+              <Bar dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="expense" fill="#ef4444" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );
 }
+
