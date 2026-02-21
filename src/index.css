@@ -1,1 +1,18 @@
 @import "tailwindcss";
+
+@theme {
+  --color-primary: #8C7355;
+  --color-secondary: #E5DED1;
+  --color-accent: #5F7161;
+  --color-charcoal: #3C4048;
+  
+  --color-income: #5F7161;
+  --color-expense: #A64444; /* Slightly adjusted red to match the earthy tone */
+  
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  background-color: var(--color-secondary);
+  color: var(--color-charcoal);
+}

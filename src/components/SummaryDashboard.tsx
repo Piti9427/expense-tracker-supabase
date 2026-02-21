@@ -12,7 +12,6 @@ interface ChartData {
 }
 
 export default function SummaryDashboard({ expenses }: SummaryDashboardProps) {
-  // จัดกลุ่มข้อมูลตามวันที่ พร้อมระบุ Type ให้ชัดเจน
   const groupedData = expenses.reduce<Record<string, ChartData>>((acc, curr) => {
     const date = curr.date;
     if (!acc[date]) {
@@ -26,10 +25,8 @@ export default function SummaryDashboard({ expenses }: SummaryDashboardProps) {
     return acc;
   }, {});
 
-  // แปลงเป็น Array และเรียงลำดับวันที่ (ย้อนหลัง 7 วันล่าสุด)
   const data = Object.values(groupedData)
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .slice(-7);
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   const totalIncome = expenses
     .filter(e => e.type === 'income')
@@ -44,43 +41,50 @@ export default function SummaryDashboard({ expenses }: SummaryDashboardProps) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center">
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Balance</p>
-          <p className={`text-xl font-black mt-1 ${balance >= 0 ? 'text-indigo-600' : 'text-red-600'}`}>
-            ${balance.toLocaleString()}
+        <div className="bg-white/70 backdrop-blur-md p-5 rounded-3xl shadow-lg border border-white/50 flex flex-col items-center">
+          <p className="text-[10px] font-black text-charcoal/30 uppercase tracking-[0.2em]">Balance</p>
+          <p className={`text-2xl font-black mt-1 ${balance >= 0 ? 'text-primary' : 'text-expense'}`}>
+            ${balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </p>
         </div>
-        <div className="bg-green-50 p-4 rounded-2xl shadow-sm border border-green-100 flex flex-col items-center">
-          <p className="text-xs font-bold text-green-400 uppercase tracking-widest">Income</p>
-          <p className="text-xl font-black text-green-600 mt-1">
-            +${totalIncome.toLocaleString()}
+        <div className="bg-accent/10 backdrop-blur-md p-5 rounded-3xl shadow-lg border border-accent/20 flex flex-col items-center">
+          <p className="text-[10px] font-black text-accent/50 uppercase tracking-[0.2em]">Income</p>
+          <p className="text-2xl font-black text-accent mt-1">
+            +${totalIncome.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </p>
         </div>
-        <div className="bg-red-50 p-4 rounded-2xl shadow-sm border border-red-100 flex flex-col items-center">
-          <p className="text-xs font-bold text-red-400 uppercase tracking-widest">Expense</p>
-          <p className="text-xl font-black text-red-600 mt-1">
-            -${totalExpense.toLocaleString()}
+        <div className="bg-expense/5 backdrop-blur-md p-5 rounded-3xl shadow-lg border border-expense/10 flex flex-col items-center">
+          <p className="text-[10px] font-black text-expense/40 uppercase tracking-[0.2em]">Expense</p>
+          <p className="text-2xl font-black text-expense mt-1">
+            -${totalExpense.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </p>
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 h-64">
-        <h4 className="text-sm font-bold text-gray-900 mb-4 flex items-center justify-between">
-          Daily Activity
-          <span className="text-[10px] text-gray-400 font-normal">Last 7 days</span>
+      <div className="bg-white/70 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-white/50 h-72">
+        <h4 className="text-sm font-black text-charcoal uppercase tracking-tighter mb-6 flex items-center justify-between">
+          Monthly Activity
+          <div className="flex gap-2">
+            <span className="flex items-center gap-1 text-[9px] font-bold text-accent">
+              <span className="w-2 h-2 rounded-full bg-accent"></span> Income
+            </span>
+            <span className="flex items-center gap-1 text-[9px] font-bold text-expense">
+              <span className="w-2 h-2 rounded-full bg-expense"></span> Expense
+            </span>
+          </div>
         </h4>
-        <div className="h-48">
+        <div className="h-52">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#8C735510" />
               <XAxis 
                 dataKey="date" 
                 axisLine={false} 
                 tickLine={false} 
-                tick={{ fontSize: 10, fill: '#9ca3af' }}
+                tick={{ fontSize: 9, fill: '#3C404840', fontWeight: 'bold' }}
                 tickFormatter={(str: string) => {
                   try {
-                    return new Date(str).toLocaleDateString('en-US', { weekday: 'short' });
+                    return new Date(str).toLocaleDateString('en-US', { day: 'numeric' });
                   } catch {
                     return str;
                   }
@@ -88,11 +92,17 @@ export default function SummaryDashboard({ expenses }: SummaryDashboardProps) {
               />
               <YAxis hide />
               <Tooltip 
-                cursor={{ fill: '#f9fafb' }}
-                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                cursor={{ fill: '#8C735505' }}
+                contentStyle={{ 
+                  borderRadius: '16px', 
+                  border: 'none', 
+                  boxShadow: '0 10px 25px rgba(0,0,0,0.05)',
+                  fontSize: '11px',
+                  fontWeight: 'bold'
+                }}
               />
-              <Bar dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="expense" fill="#ef4444" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="income" fill="#5F7161" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="expense" fill="#A64444" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
